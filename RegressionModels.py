@@ -9,37 +9,40 @@ from sklearn.linear_model import LinearRegression,Lasso,Ridge,ElasticNet,SGDRegr
 from sklearn.preprocessing import PolynomialFeatures,MinMaxScaler
 from sklearn.pipeline import make_pipeline
 
-
-file="SATILIK_EV1.xlsx"
-data=pd.read_excel(file)
-df=pd.DataFrame(data=data)
-df=df.drop(['Unnamed: 0'],axis=1)
-print(df.columns)
-x=df[['Oda_Sayısı', 'Net_m2','Katı', 'Yaşı']]
-y=df['Fiyat']
+file="Audi_A1_listings.csv"
+data=pd.read_csv(file)
+df=pd.DataFrame(data)
+y=df['Price(£)']
+df=df.drop(columns=['index','href','MileageRank','PriceRank','PPYRank','Score','Type'])
+df['Engine']=df['Engine'].str.replace('L',' ')
+df['Engine'] = pd.to_numeric(df['Engine'], errors='coerce')
+df=pd.get_dummies(df,columns=['Transmission','Fuel'],drop_first=True)
+x=df.drop('Price(£)',axis=1)
+print(df.info(),df.describe(),df.columns)
+xTrain,xTest,yTrain,yTest=train_test_split(x,y,test_size=0.3,random_state=22)
+print(xTrain.shape)
+print(yTrain.shape)
+print(df.head(5))
 model=LinearRegression()
-xTrain,xTest,yTrain,yTest=train_test_split(x,y,test_size=0.2,random_state=42)
-
 def graphics():
     plt.figure()
     corr=df.corr()
     sns.heatmap(data=corr,annot=True)
     sns.displot(df['Fiyat'])
     plt.show()
-
 def linearRegression():
     model.fit(xTrain,yTrain)
-    print(r2_score(xTrain,yTrain))
-    yTrainTest=model.predict(xTrain)
-    print(r2_score(yTrain,yTrainTest))
-    yTestTest=model.predict(xTest)
-    print(r2_score(yTest,yTestTest))
+    yTrainPred=model.predict(xTrain)
+    yTestPred=model.predict(xTest)
+    print("eğitim verisi için r2:",r2_score(yTrain,yTrainPred))
+    print("test verisi için r2: ",r2_score(yTest,yTestPred))
 
 def lassoRegression():
-    Lasso.fit(xTrain,yTrain)
-    trainScore=Lasso.score(xTrain,yTrain)
-    testScore=Lasso.score(xTest,yTest)
-    coeff_used=np.sum(Lasso.coef_!=0)
+    lasso=Lasso()
+    lasso.fit(xTrain,yTrain)
+    trainScore=lasso.score(xTrain,yTrain)
+    testScore=lasso.score(xTest,yTest)
+    coeff_used=np.sum(lasso.coef_!=0)
     print("eğitim verisi için r2:", trainScore)
     print("test verisi için r2: ",testScore)
     print("sıfırdan büyük öznitelikler: ",coeff_used)
@@ -155,4 +158,4 @@ def stokastikGradientDescent():
     print(sgd_reg_GS.best_params_)
     print(sgd_reg_GS.best_estimator_)
     print(sgd_reg_GS.best_score_)
-stokastikGradientDescent()
+ridgeRegression()
